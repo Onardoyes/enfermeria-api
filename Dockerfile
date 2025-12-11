@@ -16,17 +16,16 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
 # Instalar 'unzip': Necesario en Alpine para extraer archivos del JAR.
+# Esta línea se mantiene para instalar la herramienta.
 RUN apk update && apk add unzip
 
 # Copia el JAR compilado de la fase 'build'
 COPY --from=build /app/target/enfermeria-0.0.1-SNAPSHOT.jar app.jar
 
-# *** PASO CRÍTICO DE EXTRACCIÓN DEL CERTIFICADO ***
-# El archivo 'root.crt' fue empaquetado por Spring Boot dentro del JAR en la ruta BOOT-INF/classes/root.crt.
-# Usamos unzip (-o: sobrescribe; -j: ignora la estructura de directorios interna) para extraerlo a /tmp/,
-# una ruta estándar y limpia en el sistema de archivos del contenedor.
-RUN unzip -o -j app.jar BOOT-INF/classes/root.crt -d /tmp
+# *** PASO CRÍTICO DE EXTRACCIÓN DEL CERTIFICADO (Cambio de /tmp a /app) ***
+# Extrae el certificado 'root.crt' a la carpeta de trabajo del contenedor (/app).
+# El usuario de ejecución de Java tendrá permisos para leer archivos en /app.
+RUN unzip -o -j app.jar BOOT-INF/classes/root.crt -d /app
 
 # Ejecuta la aplicación
-# El comando de inicio es simple, ya que la extracción se hizo en la etapa RUN
 ENTRYPOINT ["java", "-jar", "app.jar"]
